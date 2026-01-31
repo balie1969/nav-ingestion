@@ -239,6 +239,9 @@ def main():
         
         # Refresh search views for frontend
         db.refresh_materialized_views()
+
+        # Update system parameter for last run
+        db.update_system_parameter("NAV_Last_Update", datetime.now())
     
     except Exception as e:
         logger.error(f"An error occurred: {e}")

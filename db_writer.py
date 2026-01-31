@@ -411,3 +411,18 @@ class DBWriter:
             conn.execute(text("REFRESH MATERIALIZED VIEW mv_occupations"))
             conn.execute(text("REFRESH MATERIALIZED VIEW mv_categories"))
         logger.info("Materialized Views refreshed.")
+
+    def update_system_parameter(self, param_name, timestamp_value):
+        """
+        Updates a system parameter in the jobs_ai_systemparameter table.
+        Deletes existing entry for param_name and inserts a new one.
+        """
+        with self.engine.begin() as conn:
+            conn.execute(text("DELETE FROM jobs_ai_systemparameter WHERE param_name = :param_name"), {"param_name": param_name})
+            
+            conn.execute(text("""
+                INSERT INTO jobs_ai_systemparameter (param_name, param_timestamp_value)
+                VALUES (:param_name, :timestamp_value)
+            """), {"param_name": param_name, "timestamp_value": timestamp_value})
+            
+        logger.info(f"System parameter '{param_name}' updated to {timestamp_value}")
