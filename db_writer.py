@@ -343,3 +343,71 @@ class DBWriter:
                     :title, :home_page_url, :feed_url, :description
                 )
             """), params)
+    def ensure_materialized_views(self):
+        """
+        Creates Materialized Views for search facets if they don't exist.
+        """
+        logger.info("Verifying Materialized Views...")
+        with self.engine.begin() as conn:
+            # 1. Locations
+            conn.execute(text("""
+                CREATE MATERIALIZED VIEW IF NOT EXISTS mv_locations AS
+                SELECT DISTINCT
+                    country,
+                    county,
+                    municipal,
+                    city
+                FROM nav_job_locations
+                WHERE country = 'NORGE'
+                  AND county IS NOT NULL
+                ORDER BY county, municipal, city;
+            """))
+            # Index logic needs check if index exists to not error, 
+            # or usage of IF NOT EXISTS which Postgres supports in newer versions.
+            # Safest is to just try create or ignore.
+            try:
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_mv_loc_county ON mv_locations(county)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_mv_loc_municipal ON mv_locations(municipal)"))
+            except Exception:
+                pass # Indexes might exist
+
+            # 2. Occupations
+            conn.execute(text("""
+                CREATE MATERIALIZED VIEW IF NOT EXISTS mv_occupations AS
+                SELECT DISTINCT
+                    level1 AS category,
+                    level2 AS sub_category
+                FROM nav_job_occupations
+                WHERE level1 IS NOT NULL
+                ORDER BY level1, level2;
+            """))
+            try:
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_mv_occ_category ON mv_occupations(category)"))
+            except Exception:
+                pass
+
+            # 3. Categories
+            conn.execute(text("""
+                CREATE MATERIALIZED VIEW IF NOT EXISTS mv_categories AS
+                SELECT DISTINCT
+                    category_type,
+                    code,
+                    name
+                FROM nav_job_categories
+                ORDER BY category_type, name;
+            """))
+            try:
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_mv_cat_type ON mv_categories(category_type)"))
+            except Exception:
+                pass
+
+    def refresh_materialized_views(self):
+        """
+        Refreshes the Materialized Views to reflect latest data.
+        """
+        logger.info("Refreshing Materialized Views...")
+        with self.engine.begin() as conn:
+            conn.execute(text("REFRESH MATERIALIZED VIEW mv_locations"))
+            conn.execute(text("REFRESH MATERIALIZED VIEW mv_occupations"))
+            conn.execute(text("REFRESH MATERIALIZED VIEW mv_categories"))
+        logger.info("Materialized Views refreshed.")

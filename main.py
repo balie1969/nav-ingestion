@@ -38,6 +38,7 @@ def main():
 
     db.ensure_feed_state_schema()
     db.ensure_job_schema_enhancements()
+    db.ensure_materialized_views()
     
     # Parse start_date if provided
     filter_date = None
@@ -235,7 +236,10 @@ def main():
                     logger.info(f"State updated. Next URL: {next_url}")
             
         logger.info(f"Sync complete. Saved {fetched_count} jobs. Skipped {skipped_count} jobs.")
-
+        
+        # Refresh search views for frontend
+        db.refresh_materialized_views()
+    
     except Exception as e:
         logger.error(f"An error occurred: {e}")
 
