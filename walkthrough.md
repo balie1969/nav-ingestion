@@ -134,6 +134,6 @@ docker run --rm --name nav-job-sync-init --env-file .env --network="host" nav-in
 Edit crontab (`crontab -e`) and add:
 ```bash
 # Run at 30 minutes past every hour
-30 * * * * docker run --rm --name nav-job-sync --env-file /root/nav-ingestion/.env --network="host" nav-ingestion
+30 * * * * docker run --rm --name nav-job-sync --env-file /opt/nav-ingestion/.env --network="host" nav-ingestion
 ```
-*(Adjust the path `/root/nav-ingestion/.env` to match your actual location)*
+*(Adjust the path `/opt/nav-ingestion/.env` to match your actual location)*
