@@ -115,3 +115,25 @@ To speed up the data sync, the script uses **concurrent fetching**:
 - Occurs if the API returns the same job UUID multiple times.
 - **Fix**: The script has logic to skip duplicates within the same processing batch.
 - **Fix**: The database writer uses `ON CONFLICT DO UPDATE` for the main job table, ensuring updates are handled gracefully.
+
+## Deployment (VPS / Docker)
+
+### 1. Build the Docker Image
+Inside the project folder on your VPS:
+```bash
+docker build -t nav-ingestion .
+```
+
+### 2. Run Manually (Initial Sync)
+To connect to a Postgres database running on the VPS host (localhost), use `--network="host"`. This allows the container to talk to the host's localhost directly.
+```bash
+docker run --rm --name nav-job-sync-init --env-file .env --network="host" nav-ingestion
+```
+
+### 3. Setup Cron Job (Hourly Updates)
+Edit crontab (`crontab -e`) and add:
+```bash
+# Run at 30 minutes past every hour
+30 * * * * docker run --rm --name nav-job-sync --env-file /root/nav-ingestion/.env --network="host" nav-ingestion
+```
+*(Adjust the path `/root/nav-ingestion/.env` to match your actual location)*
